@@ -24,8 +24,9 @@ var defSortOrder = 'ASC';
 var defSql = 'SELECT * FROM temps';
 var defFieldOrder = 'datetime';
 var sqlRecCount = 0;
+var sqlTempsCount = 0;
 var sqlSensors = 'SELECT DISTINCT sensor_id, sensor_name FROM temps';
-var sqlCount = 'SELECT COUNT(*) AS count FROM temps';
+var sqlCount = 'SELECT data_id AS count FROM temps';
 var sqlPragma = 'PRAGMA table_info(temps)'
 var legitFields = [];
 
@@ -129,7 +130,7 @@ app.route('/temps')
       async.series([
         // 0. first grab total record count
         function(callback) {
-          db.all("SELECT data_id AS count FROM temps", function (err, row) {
+          db.all(sqlCount, function (err, row) {
             sqlRecCount = row.length;
             console.log("0. count: "+sqlRecCount);
             callback();
@@ -220,6 +221,22 @@ app.route('/temps')
       ]);
     }
   })
+
+app.route('/temps/count')
+
+  .get(function(req, res) {
+    var db = new sqlite3.Database(dbFile);
+
+    db.all(sqlCount, function (err, row) {
+      sqlTempsCount = row.length;
+      console.log("0. count: "+sqlTempsCount);
+      res.json({
+        count: sqlTempsCount
+      })
+    });
+
+  })
+
 
 app.route('/test')
   // this is the test endpoint (GET http://host:port/test)
