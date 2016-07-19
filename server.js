@@ -7,10 +7,11 @@ var express = require('express');
 var app = express();
 var sqlite3 = require('sqlite3').verbose();
 var async = require('async');
-
+var morgan = require('morgan');
+var logger = require('./utils/logger');
 // Custom app settings
 app.disable('x-powered-by');
-
+app.use(morgan('combined', {stream: logger.stream})); // Log to console and file
 
 // CONFIGURATION
 // ==========================================================================
@@ -21,6 +22,7 @@ var defLimit = 1440;
 var maxLimit = 10080;
 var defOffset = 0;
 var defSortOrder = 'ASC';
+var defReverseOrder = 'DESC';
 var defSql = 'SELECT * FROM temps';
 var defFieldOrder = 'datetime';
 var sqlRecCount = 0;
@@ -51,7 +53,6 @@ router.param('sensors', function(req, res, next, name) {
   next();
 });
 
-// home page route (http://host:port)
 app.route('/')
   // default API landing page (GET http://host:port/)
   .get(function(req, res) {
@@ -62,7 +63,7 @@ app.route('/')
     });
 
 app.route('/sensors')
-  // show available sensors (GET http://host:port/sensors)
+// show available sensors (GET http://host:port/sensors)
   .get(function(req, res) {
     var db = new sqlite3.Database(dbFile);
     var row = '';
@@ -111,7 +112,7 @@ app.route('/temps')
     // check if there's any ? in the url querystring
     if (!/\?.+/.test(req.url)) {
       // no queryparam found
-      var newSql = defSql + ' ORDER BY datetime ' + defSortOrder + ' LIMIT ' + defLimit;
+      var newSql = defSql + ' ORDER BY '+defFieldOrder+' '+ defSortOrder + ' LIMIT ' + defLimit;
       //console.log("No queryparams");
       console.log("SQL query (default): "+newSql);
 
@@ -176,7 +177,7 @@ app.route('/temps')
         // 4. queryparam of "fields"
         function(callback) {
           if (req.query.fields) {
-            var fieldsArray = req.query.fields.split(",");
+            var fieldsArray = req.query.fields.toLowerCase().split(",");
             console.log("4a. fields: "+fieldsArray);
 
             db.all(sqlPragma, function(err, row) {
@@ -223,7 +224,7 @@ app.route('/temps')
   })
 
 app.route('/temps/count')
-
+  // show the total record count for the temps table
   .get(function(req, res) {
     var db = new sqlite3.Database(dbFile);
 
@@ -236,6 +237,32 @@ app.route('/temps/count')
     });
 
   })
+
+app.route('/temps/latest')
+  // show the total record count for the temps table
+  .get(function(req, res) {
+    var db = new sqlite3.Database(dbFile);
+    var newSql = defSql + ' ORDER BY '+defFieldOrder+' '+ defReverseOrder + ' LIMIT 3';
+
+    db.all(newSql, function (err, row) {
+      console.log("/temps/latest SQL: "+newSql);
+      res.json(row);
+    });
+  })
+
+app.route('/temps/max')
+  // show the total record count for the temps table
+  .get(function(req, res) {
+    var db = new sqlite3.Database(dbFile);
+    var newSql = defSql + ' ORDER BY temp_c '+ defReverseOrder + ' LIMIT 1';
+
+    db.all(newSql, function (err, row) {
+      console.log("/temps/max SQL: "+newSql);
+      res.json(row);
+    });
+  })
+
+
 
 
 app.route('/test')

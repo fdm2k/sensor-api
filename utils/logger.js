@@ -2,7 +2,7 @@ var winston = require('winston');
 var path = require('path');
 var fs = require('fs');
 
-const logPath = process.env.LOG_PATH || '../';
+const logPath = process.env.LOG_PATH || '../logs/';
 const logFile = process.env.LOG_FILENAME || 'access';
 
 Date.prototype.yyyymmdd = function() {
